@@ -45,19 +45,20 @@ export async function getServerSideProps({ req }) {
           monthMilestones: serialize(monthMilestones),
           weeklyTarget: serialize(weeklyTarget),
           automations: serialize(automations),
-        }
+        },
+        geminiApiKey: process.env.GEMINI_API_KEY || null,
       },
     };
   } catch (error) {
     console.error('Failed to fetch initial data:', error);
     return {
-      props: { initialData: { error: 'Failed to load data' } },
+      props: { initialData: { error: 'Failed to load data' }, geminiApiKey: process.env.GEMINI_API_KEY || null },
     };
   }
 }
 
 
-const HomePage = ({ initialData }) => {
+const HomePage = ({ initialData, geminiApiKey }) => {
   const router = useRouter();
   const [data, setData] = useState(initialData);
 
@@ -187,6 +188,7 @@ const HomePage = ({ initialData }) => {
         clientsMap={clientsMap}
         addTask={addTask}
         updateTaskStatus={updateTaskStatus}
+        apiKey={geminiApiKey}
        />
     </div>
   );

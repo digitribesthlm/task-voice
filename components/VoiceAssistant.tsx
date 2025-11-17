@@ -43,9 +43,10 @@ interface VoiceAssistantProps {
     clientsMap: Map<string, Client>;
     addTask: (title: string, clientName: string) => string;
     updateTaskStatus: (taskTitle: string, completed: boolean) => string;
+    apiKey?: string | null;
 }
 
-const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap, addTask, updateTaskStatus }) => {
+const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap, addTask, updateTaskStatus, apiKey }) => {
     const [isListening, setIsListening] = useState(false);
     const [userTranscript, setUserTranscript] = useState('');
     const [modelTranscript, setModelTranscript] = useState('');
@@ -158,9 +159,8 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap,
     
     const startListening = async () => {
         try {
-            const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
             if (!apiKey) {
-                throw new Error('NEXT_PUBLIC_GOOGLE_API_KEY is not defined');
+                throw new Error('GEMINI_API_KEY is not defined');
             }
             const ai = new GoogleGenAI({ apiKey });
             
