@@ -131,6 +131,7 @@ const App: React.FC = () => {
         todayTasks={todayTasks}
         weekTasks={WEEK_TASKS}
         monthMilestones={MONTH_MILESTONES}
+        clients={CLIENTS}
         clientsMap={clientsMap}
         addTask={addTask}
         addWeekTask={addWeekTask}

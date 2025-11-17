@@ -2,7 +2,6 @@ import { GoogleGenAI, Session, LiveServerMessage, Modality, Blob, Type, Function
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import type { Task, Client, WeekTask, Milestone } from '../types';
 import { MicIcon } from './Icons';
-import { CLIENTS } from '../data';
 
 // --- Audio Helper Functions ---
 function decode(base64: string): Uint8Array {
@@ -42,6 +41,7 @@ interface VoiceAssistantProps {
     todayTasks: Task[];
     weekTasks: WeekTask[];
     monthMilestones: Milestone[];
+    clients: Client[];
     clientsMap: Map<string, Client>;
     addTask: (title: string, clientName: string) => string;
     addWeekTask: (title: string, clientName: string, day: string) => string;
@@ -55,7 +55,7 @@ interface VoiceAssistantProps {
     apiKey?: string | null;
 }
 
-const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, monthMilestones, clientsMap, addTask, addWeekTask, addMonthMilestone, updateTaskStatus, deleteTask, deleteWeekTask, deleteMonthMilestone, readWeekTasks, readMonthMilestones, apiKey }) => {
+const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, monthMilestones, clients, clientsMap, addTask, addWeekTask, addMonthMilestone, updateTaskStatus, deleteTask, deleteWeekTask, deleteMonthMilestone, readWeekTasks, readMonthMilestones, apiKey }) => {
     const [isListening, setIsListening] = useState(false);
     const [userTranscript, setUserTranscript] = useState('');
     const [modelTranscript, setModelTranscript] = useState('');
@@ -83,7 +83,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, 
             type: Type.OBJECT,
             properties: {
                 title: { type: Type.STRING, description: 'The title of the task.' },
-                clientName: { type: Type.STRING, description: `The name of the client. Must be one of: ${CLIENTS.map(c => c.name).join(', ')}` }
+                clientName: { type: Type.STRING, description: `The name of the client. Must be one of: ${clients.map(c => c.name).join(', ')}` }
             },
             required: ['title', 'clientName']
         }
@@ -119,7 +119,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, 
             type: Type.OBJECT,
             properties: {
                 title: { type: Type.STRING, description: 'The title of the weekly task.' },
-                clientName: { type: Type.STRING, description: 'The name of the client this task is for.' },
+                clientName: { type: Type.STRING, description: `The name of the client this task is for. Must be one of: ${clients.map(c => c.name).join(', ')}` },
                 day: { type: Type.STRING, description: 'The day of the week (e.g., Monday, Tuesday). Defaults to Monday if not provided.' }
             },
             required: ['title', 'clientName']
@@ -133,7 +133,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, 
             type: Type.OBJECT,
             properties: {
                 title: { type: Type.STRING, description: 'The title of the milestone.' },
-                clientName: { type: Type.STRING, description: 'The name of the client this milestone is for.' },
+                clientName: { type: Type.STRING, description: `The name of the client this milestone is for. Must be one of: ${clients.map(c => c.name).join(', ')}` },
                 date: { type: Type.STRING, description: 'The date of the milestone (e.g., October 15). Defaults to TBD if not provided.' }
             },
             required: ['title', 'clientName']
