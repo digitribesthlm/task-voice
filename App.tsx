@@ -94,6 +94,22 @@ const App: React.FC = () => {
     return "This month's milestones: " + MONTH_MILESTONES.map(m => `${m.title} for ${clientsMap.get(m.clientId)?.name} on ${m.date}`).join('. ');
   };
 
+  const deleteWeekTask = (taskId: string) => {
+    console.log('Delete week task not available in demo mode:', taskId);
+  };
+
+  const deleteWeekTaskByTitle = (taskTitle: string) => {
+    return `Week task deletion not available in demo mode. Would delete: "${taskTitle}".`;
+  };
+
+  const deleteMonthMilestone = (milestoneId: string) => {
+    console.log('Delete milestone not available in demo mode:', milestoneId);
+  };
+
+  const deleteMonthMilestoneByTitle = (milestoneTitle: string) => {
+    return `Milestone deletion not available in demo mode. Would delete: "${milestoneTitle}".`;
+  };
+
 
   return (
     <div className="min-h-screen text-white p-4 sm:p-6 lg:p-8">
@@ -102,11 +118,11 @@ const App: React.FC = () => {
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-2 space-y-6">
             <TodayTasks tasks={todayTasks} clientsMap={clientsMap} phasesMap={phasesMap} onToggle={toggleTaskCompletion} onDelete={(taskId) => setTodayTasks(prev => prev.filter(t => t.id !== taskId))} />
-            <WeeklyFocus tasks={WEEK_TASKS} clientsMap={clientsMap} />
+            <WeeklyFocus tasks={WEEK_TASKS} clientsMap={clientsMap} onDelete={deleteWeekTask} />
           </div>
           <div className="space-y-6">
             <AgencyTarget target={WEEKLY_TARGET} />
-            <MonthGlance milestones={MONTH_MILESTONES} clientsMap={clientsMap} />
+            <MonthGlance milestones={MONTH_MILESTONES} clientsMap={clientsMap} onDelete={deleteMonthMilestone} />
             <SystemStatus seoPhasesCount={PHASES.length} activeAutomationsCount={activeAutomations} totalAutomations={AUTOMATIONS.length} />
           </div>
         </main>
@@ -121,6 +137,8 @@ const App: React.FC = () => {
         addMonthMilestone={addMonthMilestone}
         updateTaskStatus={updateTaskStatus}
         deleteTask={deleteTask}
+        deleteWeekTask={deleteWeekTaskByTitle}
+        deleteMonthMilestone={deleteMonthMilestoneByTitle}
         readWeekTasks={readWeekTasks}
         readMonthMilestones={readMonthMilestones}
        />
