@@ -19,10 +19,15 @@ export default async function handler(req, res) {
     }
   } else if (req.method === 'POST') {
      try {
-        const task = req.body;
+        const { type, ...data } = req.body;
         // remove the client-side generated _id if it exists, let mongo generate it
-        delete task._id;
-        const result = await db.collection('app_todayTasks').insertOne(task);
+        delete data._id;
+        
+        let collection = 'app_todayTasks';
+        if (type === 'week') collection = 'app_weekTasks';
+        else if (type === 'month') collection = 'app_monthMilestones';
+        
+        const result = await db.collection(collection).insertOne(data);
         res.status(201).json({ message: 'Task added successfully', insertedId: result.insertedId });
      } catch (error) {
         res.status(500).json({ message: 'Error adding task', error: error.message });

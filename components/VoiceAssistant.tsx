@@ -1,6 +1,6 @@
 import { GoogleGenAI, Session, LiveServerMessage, Modality, Blob, Type, FunctionDeclaration } from '@google/genai';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import type { Task, Client } from '../types';
+import type { Task, Client, WeekTask, Milestone } from '../types';
 import { MicIcon } from './Icons';
 import { CLIENTS } from '../data';
 
@@ -40,14 +40,20 @@ function encode(bytes: Uint8Array): string {
 // --- Component ---
 interface VoiceAssistantProps {
     todayTasks: Task[];
+    weekTasks: WeekTask[];
+    monthMilestones: Milestone[];
     clientsMap: Map<string, Client>;
     addTask: (title: string, clientName: string) => string;
+    addWeekTask: (title: string, clientName: string, day: string) => string;
+    addMonthMilestone: (title: string, clientName: string, date: string) => string;
     updateTaskStatus: (taskTitle: string, completed: boolean) => string;
     deleteTask: (taskTitle: string) => string;
+    readWeekTasks: () => string;
+    readMonthMilestones: () => string;
     apiKey?: string | null;
 }
 
-const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap, addTask, updateTaskStatus, deleteTask, apiKey }) => {
+const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, monthMilestones, clientsMap, addTask, addWeekTask, addMonthMilestone, updateTaskStatus, deleteTask, readWeekTasks, readMonthMilestones, apiKey }) => {
     const [isListening, setIsListening] = useState(false);
     const [userTranscript, setUserTranscript] = useState('');
     const [modelTranscript, setModelTranscript] = useState('');
@@ -103,6 +109,54 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap,
             required: ['taskTitle']
         }
     };
+
+    const addWeekTaskFunctionDeclaration: FunctionDeclaration = {
+        name: 'addWeekTask',
+        description: 'Adds a new task to this week\'s focus list.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                title: { type: Type.STRING, description: 'The title of the weekly task.' },
+                clientName: { type: Type.STRING, description: 'The name of the client this task is for.' },
+                day: { type: Type.STRING, description: 'The day of the week (e.g., Monday, Tuesday). Defaults to Monday if not provided.' }
+            },
+            required: ['title', 'clientName']
+        }
+    };
+
+    const addMonthMilestoneFunctionDeclaration: FunctionDeclaration = {
+        name: 'addMonthMilestone',
+        description: 'Adds a new milestone to this month\'s calendar.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                title: { type: Type.STRING, description: 'The title of the milestone.' },
+                clientName: { type: Type.STRING, description: 'The name of the client this milestone is for.' },
+                date: { type: Type.STRING, description: 'The date of the milestone (e.g., October 15). Defaults to TBD if not provided.' }
+            },
+            required: ['title', 'clientName']
+        }
+    };
+
+    const readWeekTasksFunctionDeclaration: FunctionDeclaration = {
+        name: 'readWeekTasks',
+        description: 'Reads all tasks scheduled for this week.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {},
+            required: []
+        }
+    };
+
+    const readMonthMilestonesFunctionDeclaration: FunctionDeclaration = {
+        name: 'readMonthMilestones',
+        description: 'Reads all milestones scheduled for this month.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {},
+            required: []
+        }
+    };
     
     const handleFunctionCall = async (fc: { name?: string; args?: any; id?: string; }) => {
         let result = "Sorry, I can't do that.";
@@ -114,10 +168,18 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap,
             }
         } else if (fc.name === 'addTask' && fc.args.title && fc.args.clientName) {
             result = addTask(fc.args.title, fc.args.clientName);
+        } else if (fc.name === 'addWeekTask' && fc.args.title && fc.args.clientName) {
+            result = addWeekTask(fc.args.title, fc.args.clientName, fc.args.day || 'Monday');
+        } else if (fc.name === 'addMonthMilestone' && fc.args.title && fc.args.clientName) {
+            result = addMonthMilestone(fc.args.title, fc.args.clientName, fc.args.date || 'TBD');
         } else if (fc.name === 'updateTaskStatus' && fc.args.taskTitle) {
             result = updateTaskStatus(fc.args.taskTitle, fc.args.completed);
         } else if (fc.name === 'deleteTask' && fc.args.taskTitle) {
             result = deleteTask(fc.args.taskTitle);
+        } else if (fc.name === 'readWeekTasks') {
+            result = readWeekTasks();
+        } else if (fc.name === 'readMonthMilestones') {
+            result = readMonthMilestones();
         }
 
         const session = await sessionRef.current;
@@ -220,7 +282,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap,
                     outputAudioTranscription: {},
                     inputAudioTranscription: {},
                     speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' }}},
-                    tools: [{ functionDeclarations: [readTasksFunctionDeclaration, addTaskFunctionDeclaration, updateTaskStatusFunctionDeclaration, deleteTaskFunctionDeclaration] }],
+                    tools: [{ functionDeclarations: [readTasksFunctionDeclaration, addTaskFunctionDeclaration, addWeekTaskFunctionDeclaration, addMonthMilestoneFunctionDeclaration, updateTaskStatusFunctionDeclaration, deleteTaskFunctionDeclaration, readWeekTasksFunctionDeclaration, readMonthMilestonesFunctionDeclaration] }],
                      systemInstruction: "You are a helpful assistant for managing an SEO agency's tasks. Be concise and friendly."
                 }
             });

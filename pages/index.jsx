@@ -215,6 +215,85 @@ const HomePage = ({ initialData, geminiApiKey }) => {
     }
   };
 
+  const addWeekTask = async (title, clientName, day) => {
+    const client = data.clients.find(c => c.name.toLowerCase() === clientName.toLowerCase());
+    if (!client) {
+        return `I couldn't find a client named ${clientName}.`;
+    }
+
+    const newTask = {
+        id: `w${Date.now()}`,
+        title,
+        clientId: client.id,
+        phaseId: 'p3',
+        day: day || 'Monday',
+        type: 'week'
+    };
+    
+    const originalTasks = data.weekTasks;
+    const displayTask = {...newTask, _id: `temp_${Date.now()}`};
+    setData(prev => ({...prev, weekTasks: [...prev.weekTasks, displayTask]}));
+    
+    try {
+       await fetch('/api/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newTask),
+       });
+       return `I've added "${title}" to this week's tasks for ${clientName}.`;
+    } catch(e) {
+      console.error("Failed to add week task", e);
+      setData(prev => ({...prev, weekTasks: originalTasks}));
+      return `Sorry, I couldn't add the task.`;
+    }
+  };
+
+  const addMonthMilestone = async (title, clientName, date) => {
+    const client = data.clients.find(c => c.name.toLowerCase() === clientName.toLowerCase());
+    if (!client) {
+        return `I couldn't find a client named ${clientName}.`;
+    }
+
+    const newMilestone = {
+        id: `m${Date.now()}`,
+        title,
+        clientId: client.id,
+        date: date || 'TBD',
+        type: 'month'
+    };
+    
+    const originalMilestones = data.monthMilestones;
+    const displayMilestone = {...newMilestone, _id: `temp_${Date.now()}`};
+    setData(prev => ({...prev, monthMilestones: [...prev.monthMilestones, displayMilestone]}));
+    
+    try {
+       await fetch('/api/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newMilestone),
+       });
+       return `I've added the milestone "${title}" for ${clientName} on ${date || 'TBD'}.`;
+    } catch(e) {
+      console.error("Failed to add milestone", e);
+      setData(prev => ({...prev, monthMilestones: originalMilestones}));
+      return `Sorry, I couldn't add the milestone.`;
+    }
+  };
+
+  const readWeekTasks = () => {
+    if (data.weekTasks.length === 0) {
+      return "There are no tasks scheduled for this week.";
+    }
+    return "This week's tasks: " + data.weekTasks.map(t => `${t.title} for ${clientsMap.get(t.clientId)?.name} on ${t.day}`).join('. ');
+  };
+
+  const readMonthMilestones = () => {
+    if (data.monthMilestones.length === 0) {
+      return "There are no milestones for this month.";
+    }
+    return "This month's milestones: " + data.monthMilestones.map(m => `${m.title} for ${clientsMap.get(m.clientId)?.name} on ${m.date}`).join('. ');
+  };
+
   if (initialData.error) {
      return <div className="min-h-screen flex items-center justify-center text-white"><p>Error: {initialData.error}</p></div>;
   }
@@ -245,13 +324,19 @@ const HomePage = ({ initialData, geminiApiKey }) => {
           </div>
         </main>
       </div>
-      <VoiceAssistant 
-        todayTasks={data.todayTasks} 
+       <VoiceAssistant 
+        todayTasks={data.todayTasks}
+        weekTasks={data.weekTasks}
+        monthMilestones={data.monthMilestones}
         clients={data.clients}
         clientsMap={clientsMap}
         addTask={addTask}
+        addWeekTask={addWeekTask}
+        addMonthMilestone={addMonthMilestone}
         updateTaskStatus={updateTaskStatus}
         deleteTask={deleteTaskByTitle}
+        readWeekTasks={readWeekTasks}
+        readMonthMilestones={readMonthMilestones}
         apiKey={geminiApiKey}
        />
     </div>
