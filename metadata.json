@@ -1,0 +1,7 @@
+{
+  "name": "Patrick's Unified SEO & Agency Framework",
+  "description": "A dashboard to provide a simplified and focused view of daily, weekly, and monthly SEO and agency tasks. Includes a voice assistant to manage tasks.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

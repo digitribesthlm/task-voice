@@ -1,0 +1,24 @@
+{
+  "name": "seo-agency-framework",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@google/genai": "^1.29.1",
+    "cookie": "^1.0.2",
+    "mongodb": "^6.5.0",
+    "next": "14.2.3",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1"
+  }
+}
