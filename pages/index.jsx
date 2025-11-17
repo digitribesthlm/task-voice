@@ -235,16 +235,23 @@ const HomePage = ({ initialData, geminiApiKey }) => {
     setData(prev => ({...prev, weekTasks: [...prev.weekTasks, displayTask]}));
     
     try {
-       await fetch('/api/data', {
+       const response = await fetch('/api/data', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newTask),
        });
+       
+       if (!response.ok) {
+         throw new Error(`HTTP error! status: ${response.status}`);
+       }
+       
+       const result = await response.json();
+       console.log('Week task added:', result);
        return `I've added "${title}" to this week's tasks for ${clientName}.`;
     } catch(e) {
       console.error("Failed to add week task", e);
       setData(prev => ({...prev, weekTasks: originalTasks}));
-      return `Sorry, I couldn't add the task.`;
+      return `Sorry, I couldn't add the task. Error: ${e.message}`;
     }
   };
 
@@ -267,16 +274,23 @@ const HomePage = ({ initialData, geminiApiKey }) => {
     setData(prev => ({...prev, monthMilestones: [...prev.monthMilestones, displayMilestone]}));
     
     try {
-       await fetch('/api/data', {
+       const response = await fetch('/api/data', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newMilestone),
        });
+       
+       if (!response.ok) {
+         throw new Error(`HTTP error! status: ${response.status}`);
+       }
+       
+       const result = await response.json();
+       console.log('Milestone added:', result);
        return `I've added the milestone "${title}" for ${clientName} on ${date || 'TBD'}.`;
     } catch(e) {
       console.error("Failed to add milestone", e);
       setData(prev => ({...prev, monthMilestones: originalMilestones}));
-      return `Sorry, I couldn't add the milestone.`;
+      return `Sorry, I couldn't add the milestone. Error: ${e.message}`;
     }
   };
 
