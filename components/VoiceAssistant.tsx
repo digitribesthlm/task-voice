@@ -43,10 +43,11 @@ interface VoiceAssistantProps {
     clientsMap: Map<string, Client>;
     addTask: (title: string, clientName: string) => string;
     updateTaskStatus: (taskTitle: string, completed: boolean) => string;
+    deleteTask: (taskTitle: string) => string;
     apiKey?: string | null;
 }
 
-const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap, addTask, updateTaskStatus, apiKey }) => {
+const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap, addTask, updateTaskStatus, deleteTask, apiKey }) => {
     const [isListening, setIsListening] = useState(false);
     const [userTranscript, setUserTranscript] = useState('');
     const [modelTranscript, setModelTranscript] = useState('');
@@ -91,6 +92,17 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap,
             required: ['taskTitle', 'completed']
         }
     };
+    const deleteTaskFunctionDeclaration: FunctionDeclaration = {
+        name: 'deleteTask',
+        description: 'Deletes a task from today\'s critical tasks list.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                taskTitle: { type: Type.STRING, description: 'The title or keywords of the task to delete.' }
+            },
+            required: ['taskTitle']
+        }
+    };
     
     const handleFunctionCall = async (fc: { name?: string; args?: any; id?: string; }) => {
         let result = "Sorry, I can't do that.";
@@ -104,6 +116,8 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap,
             result = addTask(fc.args.title, fc.args.clientName);
         } else if (fc.name === 'updateTaskStatus' && fc.args.taskTitle) {
             result = updateTaskStatus(fc.args.taskTitle, fc.args.completed);
+        } else if (fc.name === 'deleteTask' && fc.args.taskTitle) {
+            result = deleteTask(fc.args.taskTitle);
         }
 
         const session = await sessionRef.current;
@@ -206,7 +220,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap,
                     outputAudioTranscription: {},
                     inputAudioTranscription: {},
                     speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' }}},
-                    tools: [{ functionDeclarations: [readTasksFunctionDeclaration, addTaskFunctionDeclaration, updateTaskStatusFunctionDeclaration] }],
+                    tools: [{ functionDeclarations: [readTasksFunctionDeclaration, addTaskFunctionDeclaration, updateTaskStatusFunctionDeclaration, deleteTaskFunctionDeclaration] }],
                      systemInstruction: "You are a helpful assistant for managing an SEO agency's tasks. Be concise and friendly."
                 }
             });

@@ -152,6 +152,69 @@ const HomePage = ({ initialData, geminiApiKey }) => {
     }
   };
 
+  const deleteTask = async (taskId) => {
+    const originalTasks = data.todayTasks;
+    const taskToDelete = originalTasks.find(task => task.id === taskId);
+    
+    if (!taskToDelete) {
+      return;
+    }
+
+    // Optimistic update
+    setData(prev => ({
+      ...prev,
+      todayTasks: prev.todayTasks.filter(task => task.id !== taskId)
+    }));
+
+    try {
+      await fetch('/api/data', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId }),
+      });
+    } catch (e) {
+      console.error("Failed to delete task", e);
+      // Revert on failure
+      setData(prev => ({...prev, todayTasks: originalTasks}));
+    }
+  };
+
+  const deleteTaskByTitle = async (taskTitleQuery) => {
+    const originalTasks = data.todayTasks;
+    let taskToDelete = null;
+
+    for (const task of originalTasks) {
+      if (task.title.toLowerCase().includes(taskTitleQuery.toLowerCase())) {
+        taskToDelete = task;
+        break;
+      }
+    }
+
+    if (taskToDelete) {
+      // Optimistic update
+      setData(prev => ({
+        ...prev,
+        todayTasks: prev.todayTasks.filter(task => task.id !== taskToDelete.id)
+      }));
+
+      try {
+        await fetch('/api/data', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId: taskToDelete.id }),
+        });
+        return `I've deleted the task "${taskToDelete.title}".`;
+      } catch (e) {
+        console.error("Failed to delete task", e);
+        // Revert on failure
+        setData(prev => ({...prev, todayTasks: originalTasks}));
+        return `Sorry, I couldn't delete the task. Please try again.`;
+      }
+    } else {
+      return `I couldn't find a task matching "${taskTitleQuery}".`;
+    }
+  };
+
   if (initialData.error) {
      return <div className="min-h-screen flex items-center justify-center text-white"><p>Error: {initialData.error}</p></div>;
   }
@@ -172,7 +235,7 @@ const HomePage = ({ initialData, geminiApiKey }) => {
         <Header onLogout={handleLogout} />
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-2 space-y-6">
-            <TodayTasks tasks={data.todayTasks} clientsMap={clientsMap} phasesMap={phasesMap} onToggle={toggleTaskCompletion} />
+            <TodayTasks tasks={data.todayTasks} clientsMap={clientsMap} phasesMap={phasesMap} onToggle={toggleTaskCompletion} onDelete={deleteTask} />
             <WeeklyFocus tasks={data.weekTasks} clientsMap={clientsMap} />
           </div>
           <div className="space-y-6">
@@ -188,6 +251,7 @@ const HomePage = ({ initialData, geminiApiKey }) => {
         clientsMap={clientsMap}
         addTask={addTask}
         updateTaskStatus={updateTaskStatus}
+        deleteTask={deleteTaskByTitle}
         apiKey={geminiApiKey}
        />
     </div>

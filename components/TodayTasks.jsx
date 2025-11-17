@@ -1,8 +1,8 @@
 import React from 'react';
 import Card from './Card';
-import { TrophyIcon } from './Icons';
+import { TrophyIcon, TrashIcon } from './Icons';
 
-const TodayTasks = ({ tasks, clientsMap, phasesMap, onToggle }) => {
+const TodayTasks = ({ tasks, clientsMap, phasesMap, onToggle, onDelete }) => {
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -37,6 +37,13 @@ const TodayTasks = ({ tasks, clientsMap, phasesMap, onToggle }) => {
                     )}
                   </div>
                 </div>
+                <button
+                  onClick={() => onDelete(task.id)}
+                  className="text-slate-400 hover:text-red-400 transition-colors duration-200 p-2 rounded-lg hover:bg-slate-700/50"
+                  title="Delete task"
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </button>
               </div>
             );
           })}

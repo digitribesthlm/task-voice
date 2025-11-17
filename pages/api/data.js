@@ -47,8 +47,25 @@ export default async function handler(req, res) {
       } catch (error) {
           res.status(500).json({ message: 'Error updating task', error: error.message });
       }
+  } else if (req.method === 'DELETE') {
+      try {
+        const { taskId } = req.body;
+        if (!taskId) {
+          return res.status(400).json({ message: 'Task ID is required' });
+        }
+        
+        const result = await db.collection('app_todayTasks').deleteOne({ id: taskId });
+
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ message: 'Task not found' });
+        }
+
+        res.status(200).json({ message: 'Task deleted successfully' });
+      } catch (error) {
+          res.status(500).json({ message: 'Error deleting task', error: error.message });
+      }
   } else {
-    res.setHeader('Allow', ['GET', 'POST', 'PUT']);
+    res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
