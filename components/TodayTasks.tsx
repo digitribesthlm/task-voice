@@ -2,16 +2,17 @@
 import React from 'react';
 import type { Task, Client, Phase } from '../types';
 import Card from './Card';
-import { TrophyIcon } from './Icons';
+import { TrophyIcon, TrashIcon } from './Icons';
 
 interface TodayTasksProps {
   tasks: Task[];
   clientsMap: Map<string, Client>;
   phasesMap: Map<string, Phase>;
   onToggle: (taskId: string) => void;
+  onDelete: (taskId: string) => void;
 }
 
-const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, onToggle }) => {
+const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, onToggle, onDelete }) => {
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -46,6 +47,13 @@ const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, o
                     )}
                   </div>
                 </div>
+                <button
+                  onClick={() => onDelete(task.id)}
+                  className="text-slate-400 hover:text-red-400 transition-colors duration-200 p-2 rounded-lg hover:bg-slate-700/50"
+                  title="Delete task"
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </button>
               </div>
             );
           })}
