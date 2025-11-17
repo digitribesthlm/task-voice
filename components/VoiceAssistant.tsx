@@ -1,4 +1,4 @@
-import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, Blob, Type, FunctionDeclaration } from '@google/genai';
+import { GoogleGenAI, Session, LiveServerMessage, Modality, Blob, Type, FunctionDeclaration } from '@google/genai';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import type { Task, Client } from '../types';
 import { MicIcon } from './Icons';
@@ -52,7 +52,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap,
     const [modelTranscript, setModelTranscript] = useState('');
     const [isAssistantActive, setIsAssistantActive] = useState(false);
 
-    const sessionRef = useRef<Promise<LiveSession> | null>(null);
+    const sessionRef = useRef<Promise<Session> | null>(null);
     const mediaStreamRef = useRef<MediaStream | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
     const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
@@ -92,7 +92,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, clientsMap,
         }
     };
     
-    const handleFunctionCall = async (fc: { name: string; args: any; id: string; }) => {
+    const handleFunctionCall = async (fc: { name?: string; args?: any; id?: string; }) => {
         let result = "Sorry, I can't do that.";
         if (fc.name === 'readTasks') {
             if (todayTasks.length === 0) {
