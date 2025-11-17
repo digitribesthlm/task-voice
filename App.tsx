@@ -78,6 +78,22 @@ const App: React.FC = () => {
     return deleted ? `I've deleted the task "${taskTitle}".` : `I couldn't find a task matching "${taskTitleQuery}".`;
   };
 
+  const addWeekTask = (title: string, clientName: string, day: string) => {
+    return `Week task feature not available in demo mode. Would add: "${title}" for ${clientName} on ${day}.`;
+  };
+
+  const addMonthMilestone = (title: string, clientName: string, date: string) => {
+    return `Month milestone feature not available in demo mode. Would add: "${title}" for ${clientName} on ${date}.`;
+  };
+
+  const readWeekTasks = () => {
+    return "This week's tasks: " + WEEK_TASKS.map(t => `${t.title} for ${clientsMap.get(t.clientId)?.name} on ${t.day}`).join('. ');
+  };
+
+  const readMonthMilestones = () => {
+    return "This month's milestones: " + MONTH_MILESTONES.map(m => `${m.title} for ${clientsMap.get(m.clientId)?.name} on ${m.date}`).join('. ');
+  };
+
 
   return (
     <div className="min-h-screen text-white p-4 sm:p-6 lg:p-8">
@@ -96,11 +112,17 @@ const App: React.FC = () => {
         </main>
       </div>
       <VoiceAssistant 
-        todayTasks={todayTasks} 
+        todayTasks={todayTasks}
+        weekTasks={WEEK_TASKS}
+        monthMilestones={MONTH_MILESTONES}
         clientsMap={clientsMap}
         addTask={addTask}
+        addWeekTask={addWeekTask}
+        addMonthMilestone={addMonthMilestone}
         updateTaskStatus={updateTaskStatus}
         deleteTask={deleteTask}
+        readWeekTasks={readWeekTasks}
+        readMonthMilestones={readMonthMilestones}
        />
     </div>
   );
