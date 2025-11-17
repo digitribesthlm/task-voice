@@ -61,6 +61,23 @@ const App: React.FC = () => {
      return updated ? `I've marked "${taskTitle}" as ${completed ? 'complete' : 'incomplete'}.` : `I couldn't find a task matching "${taskTitleQuery}".`;
   };
 
+  const deleteTask = (taskTitleQuery: string) => {
+    let deleted = false;
+    let taskTitle = '';
+    setTodayTasks(prevTasks => {
+      const taskToDelete = prevTasks.find(task => 
+        task.title.toLowerCase().includes(taskTitleQuery.toLowerCase())
+      );
+      if (taskToDelete) {
+        deleted = true;
+        taskTitle = taskToDelete.title;
+        return prevTasks.filter(task => task.id !== taskToDelete.id);
+      }
+      return prevTasks;
+    });
+    return deleted ? `I've deleted the task "${taskTitle}".` : `I couldn't find a task matching "${taskTitleQuery}".`;
+  };
+
 
   return (
     <div className="min-h-screen text-white p-4 sm:p-6 lg:p-8">
@@ -68,7 +85,7 @@ const App: React.FC = () => {
         <Header />
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-2 space-y-6">
-            <TodayTasks tasks={todayTasks} clientsMap={clientsMap} phasesMap={phasesMap} onToggle={toggleTaskCompletion} />
+            <TodayTasks tasks={todayTasks} clientsMap={clientsMap} phasesMap={phasesMap} onToggle={toggleTaskCompletion} onDelete={(taskId) => setTodayTasks(prev => prev.filter(t => t.id !== taskId))} />
             <WeeklyFocus tasks={WEEK_TASKS} clientsMap={clientsMap} />
           </div>
           <div className="space-y-6">
@@ -83,6 +100,7 @@ const App: React.FC = () => {
         clientsMap={clientsMap}
         addTask={addTask}
         updateTaskStatus={updateTaskStatus}
+        deleteTask={deleteTask}
        />
     </div>
   );
