@@ -48,12 +48,14 @@ interface VoiceAssistantProps {
     addMonthMilestone: (title: string, clientName: string, date: string) => string;
     updateTaskStatus: (taskTitle: string, completed: boolean) => string;
     deleteTask: (taskTitle: string) => string;
+    deleteWeekTask: (taskTitle: string) => string;
+    deleteMonthMilestone: (milestoneTitle: string) => string;
     readWeekTasks: () => string;
     readMonthMilestones: () => string;
     apiKey?: string | null;
 }
 
-const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, monthMilestones, clientsMap, addTask, addWeekTask, addMonthMilestone, updateTaskStatus, deleteTask, readWeekTasks, readMonthMilestones, apiKey }) => {
+const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, monthMilestones, clientsMap, addTask, addWeekTask, addMonthMilestone, updateTaskStatus, deleteTask, deleteWeekTask, deleteMonthMilestone, readWeekTasks, readMonthMilestones, apiKey }) => {
     const [isListening, setIsListening] = useState(false);
     const [userTranscript, setUserTranscript] = useState('');
     const [modelTranscript, setModelTranscript] = useState('');
@@ -157,6 +159,30 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, 
             required: []
         }
     };
+
+    const deleteWeekTaskFunctionDeclaration: FunctionDeclaration = {
+        name: 'deleteWeekTask',
+        description: 'Deletes a task from this week\'s focus list.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                taskTitle: { type: Type.STRING, description: 'The title or keywords of the weekly task to delete.' }
+            },
+            required: ['taskTitle']
+        }
+    };
+
+    const deleteMonthMilestoneFunctionDeclaration: FunctionDeclaration = {
+        name: 'deleteMonthMilestone',
+        description: 'Deletes a milestone from this month\'s calendar.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                milestoneTitle: { type: Type.STRING, description: 'The title or keywords of the milestone to delete.' }
+            },
+            required: ['milestoneTitle']
+        }
+    };
     
     const handleFunctionCall = async (fc: { name?: string; args?: any; id?: string; }) => {
         let result = "Sorry, I can't do that.";
@@ -176,6 +202,10 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, 
             result = updateTaskStatus(fc.args.taskTitle, fc.args.completed);
         } else if (fc.name === 'deleteTask' && fc.args.taskTitle) {
             result = deleteTask(fc.args.taskTitle);
+        } else if (fc.name === 'deleteWeekTask' && fc.args.taskTitle) {
+            result = deleteWeekTask(fc.args.taskTitle);
+        } else if (fc.name === 'deleteMonthMilestone' && fc.args.milestoneTitle) {
+            result = deleteMonthMilestone(fc.args.milestoneTitle);
         } else if (fc.name === 'readWeekTasks') {
             result = readWeekTasks();
         } else if (fc.name === 'readMonthMilestones') {
@@ -282,7 +312,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, 
                     outputAudioTranscription: {},
                     inputAudioTranscription: {},
                     speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' }}},
-                    tools: [{ functionDeclarations: [readTasksFunctionDeclaration, addTaskFunctionDeclaration, addWeekTaskFunctionDeclaration, addMonthMilestoneFunctionDeclaration, updateTaskStatusFunctionDeclaration, deleteTaskFunctionDeclaration, readWeekTasksFunctionDeclaration, readMonthMilestonesFunctionDeclaration] }],
+                    tools: [{ functionDeclarations: [readTasksFunctionDeclaration, addTaskFunctionDeclaration, addWeekTaskFunctionDeclaration, addMonthMilestoneFunctionDeclaration, updateTaskStatusFunctionDeclaration, deleteTaskFunctionDeclaration, deleteWeekTaskFunctionDeclaration, deleteMonthMilestoneFunctionDeclaration, readWeekTasksFunctionDeclaration, readMonthMilestonesFunctionDeclaration] }],
                      systemInstruction: "You are a helpful assistant for managing an SEO agency's tasks. Be concise and friendly."
                 }
             });

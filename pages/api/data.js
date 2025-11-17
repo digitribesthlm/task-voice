@@ -54,12 +54,16 @@ export default async function handler(req, res) {
       }
   } else if (req.method === 'DELETE') {
       try {
-        const { taskId } = req.body;
+        const { taskId, type } = req.body;
         if (!taskId) {
           return res.status(400).json({ message: 'Task ID is required' });
         }
         
-        const result = await db.collection('app_todayTasks').deleteOne({ id: taskId });
+        let collection = 'app_todayTasks';
+        if (type === 'week') collection = 'app_weekTasks';
+        else if (type === 'month') collection = 'app_monthMilestones';
+        
+        const result = await db.collection(collection).deleteOne({ id: taskId });
 
         if (result.deletedCount === 0) {
           return res.status(404).json({ message: 'Task not found' });

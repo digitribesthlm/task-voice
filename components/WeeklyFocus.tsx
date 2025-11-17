@@ -2,14 +2,15 @@
 import React from 'react';
 import type { WeekTask, Client } from '../types';
 import Card from './Card';
-import { CalendarIcon } from './Icons';
+import { CalendarIcon, TrashIcon } from './Icons';
 
 interface WeeklyFocusProps {
   tasks: WeekTask[];
   clientsMap: Map<string, Client>;
+  onDelete: (taskId: string) => void;
 }
 
-const WeeklyFocus: React.FC<WeeklyFocusProps> = ({ tasks, clientsMap }) => {
+const WeeklyFocus: React.FC<WeeklyFocusProps> = ({ tasks, clientsMap, onDelete }) => {
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -34,6 +35,13 @@ const WeeklyFocus: React.FC<WeeklyFocusProps> = ({ tasks, clientsMap }) => {
                     )}
                   </div>
                 </div>
+                <button
+                  onClick={() => onDelete(task.id)}
+                  className="text-slate-400 hover:text-red-400 transition-colors duration-200 p-2 rounded-lg hover:bg-slate-700/50"
+                  title="Delete task"
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </button>
               </div>
             );
           })}
