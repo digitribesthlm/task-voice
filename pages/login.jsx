@@ -42,9 +42,7 @@ const LoginPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-[#0F172A] p-6">
         <div className="w-full max-w-md bg-[#1B2234] rounded-2xl shadow-2xl border border-slate-800 p-8">
           <h1 className="text-2xl font-semibold text-white text-center">Sign in</h1>
-          <p className="text-slate-400 text-center mt-2">
-            Enter the <code>USERNAME</code> and <code>PASSWORD</code> you stored in <code>.env.local</code> (lines 4-6).
-          </p>
+
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Username</label>
