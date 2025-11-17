@@ -70,6 +70,8 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, 
     const outputAudioContextRef = useRef<AudioContext | null>(null);
     const nextStartTimeRef = useRef(0);
     const sourcesRef = useRef(new Set<AudioBufferSourceNode>());
+    const wakeLockRef = useRef<any>(null);
+    const keepAliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const readTasksFunctionDeclaration: FunctionDeclaration = {
         name: 'readTasks',
@@ -274,18 +276,52 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, 
             audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
             outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
             
+            // Resume audio contexts if suspended (important for mobile)
+            if (audioContextRef.current.state === 'suspended') {
+                await audioContextRef.current.resume();
+            }
+            if (outputAudioContextRef.current.state === 'suspended') {
+                await outputAudioContextRef.current.resume();
+            }
+            
             setUserTranscript('');
             setModelTranscript('');
             setIsAssistantActive(true);
             setIsListening(true);
             
+            // Request wake lock to prevent screen sleep on mobile
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+                    console.log('Wake lock acquired');
+                }
+            } catch (err) {
+                console.log('Wake lock not supported or failed:', err);
+            }
+            
             mediaStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            // Keep-alive mechanism: send periodic pings to prevent connection timeout
+            keepAliveIntervalRef.current = setInterval(() => {
+                if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+                    audioContextRef.current.resume();
+                }
+                if (outputAudioContextRef.current && outputAudioContextRef.current.state === 'suspended') {
+                    outputAudioContextRef.current.resume();
+                }
+            }, 1000); // Check every second
             
             sessionRef.current = ai.live.connect({
                 model: 'gemini-2.5-flash-native-audio-preview-09-2025',
                 callbacks: {
-                    onopen: () => {
+                    onopen: async () => {
                         if (!audioContextRef.current || !mediaStreamRef.current) return;
+                        
+                        // Ensure audio context is running (mobile fix)
+                        if (audioContextRef.current.state === 'suspended') {
+                            await audioContextRef.current.resume();
+                        }
+                        
                         sourceNodeRef.current = audioContextRef.current.createMediaStreamSource(mediaStreamRef.current);
                         scriptProcessorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
                         
@@ -327,6 +363,23 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, 
     const stopListening = useCallback(async () => {
         setIsListening(false);
         setIsAssistantActive(false);
+        
+        // Clear keep-alive interval
+        if (keepAliveIntervalRef.current) {
+            clearInterval(keepAliveIntervalRef.current);
+            keepAliveIntervalRef.current = null;
+        }
+        
+        // Release wake lock
+        if (wakeLockRef.current) {
+            try {
+                await wakeLockRef.current.release();
+                wakeLockRef.current = null;
+                console.log('Wake lock released');
+            } catch (err) {
+                console.log('Failed to release wake lock:', err);
+            }
+        }
 
         if (mediaStreamRef.current) {
             mediaStreamRef.current.getTracks().forEach(track => track.stop());
