@@ -2,6 +2,7 @@ import React from 'react';
 import Card from './Card';
 import { TrophyIcon, TrashIcon } from './Icons';
 
+// Component for displaying today's critical tasks with delete functionality
 const TodayTasks = ({ tasks, clientsMap, phasesMap, onToggle, onDelete }) => {
   return (
     <section>
