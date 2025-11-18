@@ -446,14 +446,62 @@ const HomePage = ({ initialData, geminiApiKey }) => {
     }
   };
 
+  // Drag and drop handler - converts WeekTask to Task and moves it to today
+  const handleMoveWeekTaskToToday = async (weekTask) => {
+    // Create a new task from the week task
+    const newTask = {
+      id: `t${Date.now()}`,
+      title: weekTask.title,
+      clientId: weekTask.clientId,
+      phaseId: weekTask.phaseId || 'p3',
+      completed: false,
+      type: 'today'
+    };
+    
+    const originalTodayTasks = data.todayTasks;
+    const originalWeekTasks = data.weekTasks;
+    
+    // Optimistic update - add to today and remove from week
+    const displayTask = {...newTask, _id: `temp_${Date.now()}`};
+    setData(prev => ({
+      ...prev,
+      todayTasks: [...prev.todayTasks, displayTask],
+      weekTasks: prev.weekTasks.filter(t => t.id !== weekTask.id)
+    }));
+    
+    try {
+      // Add to today's tasks in database
+      await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTask),
+      });
+      
+      // Delete from week tasks in database
+      await fetch('/api/data', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: weekTask.id, type: 'week' }),
+      });
+    } catch (e) {
+      console.error("Failed to move task", e);
+      // Revert on failure
+      setData(prev => ({
+        ...prev,
+        todayTasks: originalTodayTasks,
+        weekTasks: originalWeekTasks
+      }));
+    }
+  };
+
   return (
     <div className="min-h-screen text-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <Header onLogout={handleLogout} />
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-2 space-y-6">
-            <TodayTasks tasks={data.todayTasks} clientsMap={clientsMap} phasesMap={phasesMap} onToggle={toggleTaskCompletion} onDelete={deleteTask} />
-            <WeeklyFocus tasks={data.weekTasks} clientsMap={clientsMap} onDelete={deleteWeekTask} />
+            <TodayTasks tasks={data.todayTasks} clientsMap={clientsMap} phasesMap={phasesMap} onToggle={toggleTaskCompletion} onDelete={deleteTask} onDropWeekTask={handleMoveWeekTaskToToday} />
+            <WeeklyFocus tasks={data.weekTasks} clientsMap={clientsMap} onDelete={deleteWeekTask} onMoveToToday={handleMoveWeekTaskToToday} />
           </div>
           <div className="space-y-6">
             {data.weeklyTarget && <AgencyTarget target={data.weeklyTarget} />}
