@@ -8,9 +8,15 @@ section to the "Today's 3 Critical Tasks" section.
 
 Files Modified:
 ---------------
-1. App.tsx - Main application component
+1. pages/index.jsx - Main Next.js page component (PRODUCTION FILE)
 2. components/WeeklyFocus.tsx - Weekly tasks component (drag source)
 3. components/TodayTasks.tsx - Today's tasks component (drop target)
+4. App.tsx - Standalone React component (for development/testing only)
+
+IMPORTANT NOTE:
+---------------
+The application uses Next.js with pages/index.jsx as the production file.
+App.tsx is NOT used in the deployed version - it's only for standalone development.
 
 How It Works:
 -------------
@@ -25,13 +31,14 @@ How It Works:
    - The entire card accepts dropped tasks
    - Visual feedback: Blue ring and background highlight when dragging over
    - Shows "Drop task here" message during drag-over
-   - Processes the dropped task data and triggers the move event
+   - Processes the dropped task data and calls onDropWeekTask prop
 
-3. STATE MANAGEMENT (App.tsx):
-   - weekTasks state now managed in App component (previously static)
+3. STATE MANAGEMENT (pages/index.jsx):
    - handleMoveWeekTaskToToday function converts WeekTask to Task format
-   - Custom window event 'moveWeekTaskToToday' bridges components
-   - Task is added to today's list and removed from week's list atomically
+   - Optimistic UI update (immediate visual feedback)
+   - Persists changes to database via API calls
+   - Automatic rollback if database operation fails
+   - Task is added to today's list and removed from week's list
 
 Key Features:
 -------------
@@ -41,6 +48,8 @@ Key Features:
 - Maintains client and phase information
 - Tasks are removed from week list after successful drop
 - Smooth animations and transitions
+- Database persistence with optimistic updates
+- Error handling with automatic rollback
 
 User Experience:
 ----------------
@@ -51,15 +60,26 @@ User Experience:
 5. Section highlights with blue border and shows drop zone message
 6. Release mouse to drop
 7. Task appears in today's list and disappears from week's list
+8. Changes are automatically saved to the database
 
 Technical Details:
 ------------------
 - Uses React synthetic events for drag operations
 - Data transfer via JSON serialization
-- Custom event system for cross-component communication
+- Props-based communication (no window events)
 - TypeScript type safety maintained throughout
 - Preserves all task metadata (client, phase, title)
 - Generates unique IDs for converted tasks using timestamp
+- Optimistic UI updates for better UX
+- API integration for database persistence
+- Error handling with state rollback
+
+Database Operations:
+--------------------
+1. POST /api/data - Creates new task in today's collection
+2. DELETE /api/data - Removes task from week's collection
+3. Both operations wrapped in try/catch for error handling
+4. Failed operations trigger automatic UI rollback
 
 Future Enhancements:
 --------------------
@@ -69,4 +89,5 @@ Future Enhancements:
 - Add touch support for mobile devices
 - Add undo functionality
 - Add animation when task moves between lists
-- Persist changes to backend/database
+- Add confirmation dialog for important moves
+- Add drag preview with custom styling
