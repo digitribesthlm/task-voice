@@ -42,6 +42,25 @@ const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, o
     }
   };
 
+  const handleTaskDragStart = (e: React.DragEvent<HTMLDivElement>, task: Task) => {
+    e.stopPropagation(); // Prevent parent drag handlers
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('application/json', JSON.stringify(task));
+    e.dataTransfer.setData('text/plain', task.id);
+    
+    // Add visual feedback
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '0.5';
+    }
+  };
+
+  const handleTaskDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    // Reset visual feedback
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '1';
+    }
+  };
+
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -66,12 +85,19 @@ const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, o
               const client = clientsMap.get(task.clientId);
               const phase = phasesMap.get(task.phaseId);
               return (
-                <div key={task.id} className={`p-4 rounded-lg flex items-start gap-4 transition-colors duration-200 ${task.completed ? 'bg-green-900/40' : 'bg-slate-800'}`}>
+                <div 
+                  key={task.id} 
+                  className={`p-4 rounded-lg flex items-start gap-4 transition-colors duration-200 cursor-move ${task.completed ? 'bg-green-900/40' : 'bg-slate-800'} hover:bg-slate-700/50`}
+                  draggable
+                  onDragStart={(e) => handleTaskDragStart(e, task)}
+                  onDragEnd={handleTaskDragEnd}
+                >
                   <input
                     type="checkbox"
                     checked={task.completed}
                     onChange={() => onToggle(task.id)}
                     className="mt-1 form-checkbox h-5 w-5 rounded bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
                   />
                   <div className="flex-1">
                     <p className={`text-white ${task.completed ? 'line-through text-slate-400' : ''}`}>{task.title}</p>

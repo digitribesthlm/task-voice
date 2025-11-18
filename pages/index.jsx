@@ -494,6 +494,59 @@ const HomePage = ({ initialData, geminiApiKey }) => {
     }
   };
 
+  // Reverse drag and drop handler - converts Task to WeekTask and moves it to week
+  const handleMoveTodayTaskToWeek = async (todayTask) => {
+    // Determine the day for the week task (default to Monday)
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const defaultDay = daysOfWeek[today >= 1 && today <= 5 ? today - 1 : 0];
+
+    // Create a new week task from the today task
+    const newWeekTask = {
+      id: `w${Date.now()}`,
+      title: todayTask.title,
+      clientId: todayTask.clientId,
+      phaseId: todayTask.phaseId || 'p3',
+      day: defaultDay,
+      type: 'week'
+    };
+    
+    const originalTodayTasks = data.todayTasks;
+    const originalWeekTasks = data.weekTasks;
+    
+    // Optimistic update - add to week and remove from today
+    const displayTask = {...newWeekTask, _id: `temp_${Date.now()}`};
+    setData(prev => ({
+      ...prev,
+      weekTasks: [...prev.weekTasks, displayTask],
+      todayTasks: prev.todayTasks.filter(t => t.id !== todayTask.id)
+    }));
+    
+    try {
+      // Add to week's tasks in database
+      await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newWeekTask),
+      });
+      
+      // Delete from today's tasks in database
+      await fetch('/api/data', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: todayTask.id, type: 'today' }),
+      });
+    } catch (e) {
+      console.error("Failed to move task to week", e);
+      // Revert on failure
+      setData(prev => ({
+        ...prev,
+        todayTasks: originalTodayTasks,
+        weekTasks: originalWeekTasks
+      }));
+    }
+  };
+
   return (
     <div className="min-h-screen text-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -501,7 +554,7 @@ const HomePage = ({ initialData, geminiApiKey }) => {
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-2 space-y-6">
             <TodayTasks tasks={data.todayTasks} clientsMap={clientsMap} phasesMap={phasesMap} onToggle={toggleTaskCompletion} onDelete={deleteTask} onDropWeekTask={handleMoveWeekTaskToToday} />
-            <WeeklyFocus tasks={data.weekTasks} clientsMap={clientsMap} onDelete={deleteWeekTask} onMoveToToday={handleMoveWeekTaskToToday} />
+            <WeeklyFocus tasks={data.weekTasks} clientsMap={clientsMap} onDelete={deleteWeekTask} onMoveToToday={handleMoveWeekTaskToToday} onDropTodayTask={handleMoveTodayTaskToWeek} />
           </div>
           <div className="space-y-6">
             {data.weeklyTarget && <AgencyTarget target={data.weeklyTarget} />}

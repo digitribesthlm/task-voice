@@ -1,6 +1,6 @@
 
-import React from 'react';
-import type { WeekTask, Client } from '../types';
+import React, { useState } from 'react';
+import type { WeekTask, Client, Task } from '../types';
 import Card from './Card';
 import { CalendarIcon, TrashIcon } from './Icons';
 
@@ -9,9 +9,12 @@ interface WeeklyFocusProps {
   clientsMap: Map<string, Client>;
   onDelete: (taskId: string) => void;
   onMoveToToday: (task: WeekTask) => void;
+  onDropTodayTask?: (task: Task) => void;
 }
 
-const WeeklyFocus: React.FC<WeeklyFocusProps> = ({ tasks, clientsMap, onDelete, onMoveToToday }) => {
+const WeeklyFocus: React.FC<WeeklyFocusProps> = ({ tasks, clientsMap, onDelete, onMoveToToday, onDropTodayTask }) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, task: WeekTask) => {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('application/json', JSON.stringify(task));
@@ -30,6 +33,35 @@ const WeeklyFocus: React.FC<WeeklyFocusProps> = ({ tasks, clientsMap, onDelete, 
     }
   };
 
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    try {
+      const taskData = e.dataTransfer.getData('application/json');
+      if (taskData && onDropTodayTask) {
+        const todayTask: Task = JSON.parse(taskData);
+        // Only accept tasks from today (they have 'completed' property)
+        if ('completed' in todayTask) {
+          onDropTodayTask(todayTask);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing dropped task:', error);
+    }
+  };
+
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -37,7 +69,17 @@ const WeeklyFocus: React.FC<WeeklyFocusProps> = ({ tasks, clientsMap, onDelete, 
         <h2 className="text-xl font-bold text-white">This Week's Focus</h2>
       </div>
       <Card>
-        <div className="divide-y divide-slate-700">
+        <div 
+          className={`divide-y divide-slate-700 transition-all duration-200 ${isDragOver ? 'ring-2 ring-purple-500 ring-opacity-50 bg-purple-900/10 rounded-lg' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {isDragOver && (
+            <div className="mb-4 p-4 border-2 border-dashed border-purple-500 rounded-lg text-center text-purple-400">
+              Drop task here to add to this week's focus
+            </div>
+          )}
           {tasks.map(task => {
             const client = clientsMap.get(task.clientId);
             return (
