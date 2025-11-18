@@ -1,0 +1,72 @@
+DRAG AND DROP IMPLEMENTATION GUIDE
+===================================
+
+Overview:
+---------
+This implementation adds drag-and-drop functionality to move tasks from the "This Week's Focus" 
+section to the "Today's 3 Critical Tasks" section.
+
+Files Modified:
+---------------
+1. App.tsx - Main application component
+2. components/WeeklyFocus.tsx - Weekly tasks component (drag source)
+3. components/TodayTasks.tsx - Today's tasks component (drop target)
+
+How It Works:
+-------------
+
+1. DRAG SOURCE (WeeklyFocus.tsx):
+   - Each task item is now draggable (draggable={true})
+   - Visual feedback: Task becomes semi-transparent while dragging
+   - Task data is serialized to JSON and attached to the drag event
+   - Cursor changes to "move" to indicate draggable items
+
+2. DROP TARGET (TodayTasks.tsx):
+   - The entire card accepts dropped tasks
+   - Visual feedback: Blue ring and background highlight when dragging over
+   - Shows "Drop task here" message during drag-over
+   - Processes the dropped task data and triggers the move event
+
+3. STATE MANAGEMENT (App.tsx):
+   - weekTasks state now managed in App component (previously static)
+   - handleMoveWeekTaskToToday function converts WeekTask to Task format
+   - Custom window event 'moveWeekTaskToToday' bridges components
+   - Task is added to today's list and removed from week's list atomically
+
+Key Features:
+-------------
+- Native HTML5 drag-and-drop API (no external dependencies)
+- Visual feedback during drag operations
+- Automatic task conversion (WeekTask → Task)
+- Maintains client and phase information
+- Tasks are removed from week list after successful drop
+- Smooth animations and transitions
+
+User Experience:
+----------------
+1. Hover over any task in "This Week's Focus" - cursor changes to move icon
+2. Click and drag the task
+3. Task becomes semi-transparent while dragging
+4. Drag over "Today's 3 Critical Tasks" section
+5. Section highlights with blue border and shows drop zone message
+6. Release mouse to drop
+7. Task appears in today's list and disappears from week's list
+
+Technical Details:
+------------------
+- Uses React synthetic events for drag operations
+- Data transfer via JSON serialization
+- Custom event system for cross-component communication
+- TypeScript type safety maintained throughout
+- Preserves all task metadata (client, phase, title)
+- Generates unique IDs for converted tasks using timestamp
+
+Future Enhancements:
+--------------------
+- Add drag-and-drop from Today back to Week
+- Add drag-and-drop to Month Milestones
+- Add keyboard accessibility (arrow keys + space/enter)
+- Add touch support for mobile devices
+- Add undo functionality
+- Add animation when task moves between lists
+- Persist changes to backend/database

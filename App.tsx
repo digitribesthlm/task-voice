@@ -1,6 +1,6 @@
 
-import React, { useState, useMemo } from 'react';
-import type { Task } from './types';
+import React, { useState, useMemo, useEffect } from 'react';
+import type { Task, WeekTask } from './types';
 import { CLIENTS, PHASES, TODAY_TASKS, WEEK_TASKS, MONTH_MILESTONES, WEEKLY_TARGET, AUTOMATIONS } from './data';
 import Header from './components/Header';
 import TodayTasks from './components/TodayTasks';
@@ -12,6 +12,7 @@ import VoiceAssistant from './components/VoiceAssistant';
 
 const App: React.FC = () => {
   const [todayTasks, setTodayTasks] = useState<Task[]>(TODAY_TASKS);
+  const [weekTasks, setWeekTasks] = useState<WeekTask[]>(WEEK_TASKS);
 
   const clientsMap = useMemo(() => new Map(CLIENTS.map(c => [c.id, c])), []);
   const phasesMap = useMemo(() => new Map(PHASES.map(p => [p.id, p])), []);
@@ -87,7 +88,7 @@ const App: React.FC = () => {
   };
 
   const readWeekTasks = () => {
-    return "This week's tasks: " + WEEK_TASKS.map(t => `${t.title} for ${clientsMap.get(t.clientId)?.name} on ${t.day}`).join('. ');
+    return "This week's tasks: " + weekTasks.map(t => `${t.title} for ${clientsMap.get(t.clientId)?.name} on ${t.day}`).join('. ');
   };
 
   const readMonthMilestones = () => {
@@ -95,7 +96,7 @@ const App: React.FC = () => {
   };
 
   const deleteWeekTask = (taskId: string) => {
-    console.log('Delete week task not available in demo mode:', taskId);
+    setWeekTasks(prev => prev.filter(t => t.id !== taskId));
   };
 
   const deleteWeekTaskByTitle = (taskTitle: string) => {
@@ -110,6 +111,39 @@ const App: React.FC = () => {
     return `Milestone deletion not available in demo mode. Would delete: "${milestoneTitle}".`;
   };
 
+  // Drag and drop handler - converts WeekTask to Task and moves it to today
+  const handleMoveWeekTaskToToday = (weekTask: WeekTask) => {
+    // Create a new task from the week task
+    const newTask: Task = {
+      id: `t${Date.now()}`,
+      title: weekTask.title,
+      clientId: weekTask.clientId,
+      phaseId: weekTask.phaseId || 'p3', // Use existing phaseId or default
+      completed: false,
+    };
+    
+    // Add to today's tasks
+    setTodayTasks(prev => [...prev, newTask]);
+    
+    // Remove from week tasks
+    setWeekTasks(prev => prev.filter(t => t.id !== weekTask.id));
+  };
+
+  // Set up event listener for drag and drop
+  useEffect(() => {
+    const handleMoveEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<WeekTask>;
+      if (customEvent.detail) {
+        handleMoveWeekTaskToToday(customEvent.detail);
+      }
+    };
+
+    window.addEventListener('moveWeekTaskToToday', handleMoveEvent);
+
+    return () => {
+      window.removeEventListener('moveWeekTaskToToday', handleMoveEvent);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen text-white p-4 sm:p-6 lg:p-8">
@@ -117,8 +151,19 @@ const App: React.FC = () => {
         <Header />
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-2 space-y-6">
-            <TodayTasks tasks={todayTasks} clientsMap={clientsMap} phasesMap={phasesMap} onToggle={toggleTaskCompletion} onDelete={(taskId) => setTodayTasks(prev => prev.filter(t => t.id !== taskId))} />
-            <WeeklyFocus tasks={WEEK_TASKS} clientsMap={clientsMap} onDelete={deleteWeekTask} />
+            <TodayTasks 
+              tasks={todayTasks} 
+              clientsMap={clientsMap} 
+              phasesMap={phasesMap} 
+              onToggle={toggleTaskCompletion} 
+              onDelete={(taskId) => setTodayTasks(prev => prev.filter(t => t.id !== taskId))} 
+            />
+            <WeeklyFocus 
+              tasks={weekTasks} 
+              clientsMap={clientsMap} 
+              onDelete={deleteWeekTask}
+              onMoveToToday={handleMoveWeekTaskToToday}
+            />
           </div>
           <div className="space-y-6">
             <AgencyTarget target={WEEKLY_TARGET} />
@@ -129,7 +174,7 @@ const App: React.FC = () => {
       </div>
       <VoiceAssistant 
         todayTasks={todayTasks}
-        weekTasks={WEEK_TASKS}
+        weekTasks={weekTasks}
         monthMilestones={MONTH_MILESTONES}
         clients={CLIENTS}
         clientsMap={clientsMap}

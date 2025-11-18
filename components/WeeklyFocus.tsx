@@ -8,9 +8,28 @@ interface WeeklyFocusProps {
   tasks: WeekTask[];
   clientsMap: Map<string, Client>;
   onDelete: (taskId: string) => void;
+  onMoveToToday: (task: WeekTask) => void;
 }
 
-const WeeklyFocus: React.FC<WeeklyFocusProps> = ({ tasks, clientsMap, onDelete }) => {
+const WeeklyFocus: React.FC<WeeklyFocusProps> = ({ tasks, clientsMap, onDelete, onMoveToToday }) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, task: WeekTask) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('application/json', JSON.stringify(task));
+    e.dataTransfer.setData('text/plain', task.id);
+    
+    // Add visual feedback
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '0.5';
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    // Reset visual feedback
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '1';
+    }
+  };
+
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -22,7 +41,13 @@ const WeeklyFocus: React.FC<WeeklyFocusProps> = ({ tasks, clientsMap, onDelete }
           {tasks.map(task => {
             const client = clientsMap.get(task.clientId);
             return (
-              <div key={task.id} className="flex items-center justify-between py-4">
+              <div 
+                key={task.id} 
+                className="flex items-center justify-between py-4 cursor-move hover:bg-slate-700/30 transition-colors duration-200 rounded-lg px-2"
+                draggable
+                onDragStart={(e) => handleDragStart(e, task)}
+                onDragEnd={handleDragEnd}
+              >
                 <div className="flex items-center gap-4">
                   <span className="w-24 text-sm font-semibold text-slate-400">{task.day}</span>
                   <div>

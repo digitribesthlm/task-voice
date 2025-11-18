@@ -1,6 +1,6 @@
 
-import React from 'react';
-import type { Task, Client, Phase } from '../types';
+import React, { useState } from 'react';
+import type { Task, Client, Phase, WeekTask } from '../types';
 import Card from './Card';
 import { TrophyIcon, TrashIcon } from './Icons';
 
@@ -13,6 +13,37 @@ interface TodayTasksProps {
 }
 
 const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, onToggle, onDelete }) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    try {
+      const taskData = e.dataTransfer.getData('application/json');
+      if (taskData) {
+        const weekTask: WeekTask = JSON.parse(taskData);
+        
+        // Get the onMoveToToday function from the parent via window event
+        const event = new CustomEvent('moveWeekTaskToToday', { detail: weekTask });
+        window.dispatchEvent(event);
+      }
+    } catch (error) {
+      console.error('Error processing dropped task:', error);
+    }
+  };
+
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -20,43 +51,55 @@ const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, o
         <h2 className="text-xl font-bold text-white">Your Daily Execution Layer</h2>
       </div>
       <Card>
-        <h3 className="font-semibold text-white mb-4">Today's 3 Critical Tasks</h3>
-        <div className="space-y-3">
-          {tasks.map(task => {
-            const client = clientsMap.get(task.clientId);
-            const phase = phasesMap.get(task.phaseId);
-            return (
-              <div key={task.id} className={`p-4 rounded-lg flex items-start gap-4 transition-colors duration-200 ${task.completed ? 'bg-green-900/40' : 'bg-slate-800'}`}>
-                <input
-                  type="checkbox"
-                  checked={task.completed}
-                  onChange={() => onToggle(task.id)}
-                  className="mt-1 form-checkbox h-5 w-5 rounded bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                />
-                <div className="flex-1">
-                  <p className={`text-white ${task.completed ? 'line-through text-slate-400' : ''}`}>{task.title}</p>
-                  <div className="flex items-center gap-4 mt-2 text-sm text-slate-400">
-                    {client && (
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: client.color }}></span>
-                        <span>{client.name}</span>
-                      </div>
-                    )}
-                    {phase && (
-                       <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: phase.color, color: '#FFFFFF' }}>{phase.name}</span>
-                    )}
+        <div 
+          className={`transition-all duration-200 ${isDragOver ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-900/10' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <h3 className="font-semibold text-white mb-4">Today's 3 Critical Tasks</h3>
+          {isDragOver && (
+            <div className="mb-4 p-4 border-2 border-dashed border-blue-500 rounded-lg text-center text-blue-400">
+              Drop task here to add to today's list
+            </div>
+          )}
+          <div className="space-y-3">
+            {tasks.map(task => {
+              const client = clientsMap.get(task.clientId);
+              const phase = phasesMap.get(task.phaseId);
+              return (
+                <div key={task.id} className={`p-4 rounded-lg flex items-start gap-4 transition-colors duration-200 ${task.completed ? 'bg-green-900/40' : 'bg-slate-800'}`}>
+                  <input
+                    type="checkbox"
+                    checked={task.completed}
+                    onChange={() => onToggle(task.id)}
+                    className="mt-1 form-checkbox h-5 w-5 rounded bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <p className={`text-white ${task.completed ? 'line-through text-slate-400' : ''}`}>{task.title}</p>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-slate-400">
+                      {client && (
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: client.color }}></span>
+                          <span>{client.name}</span>
+                        </div>
+                      )}
+                      {phase && (
+                         <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: phase.color, color: '#FFFFFF' }}>{phase.name}</span>
+                      )}
+                    </div>
                   </div>
+                  <button
+                    onClick={() => onDelete(task.id)}
+                    className="text-slate-400 hover:text-red-400 transition-colors duration-200 p-2 rounded-lg hover:bg-slate-700/50"
+                    title="Delete task"
+                  >
+                    <TrashIcon className="w-5 h-5" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => onDelete(task.id)}
-                  className="text-slate-400 hover:text-red-400 transition-colors duration-200 p-2 rounded-lg hover:bg-slate-700/50"
-                  title="Delete task"
-                >
-                  <TrashIcon className="w-5 h-5" />
-                </button>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </Card>
     </section>
