@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { Task, WeekTask } from './types';
 import { CLIENTS, PHASES, TODAY_TASKS, WEEK_TASKS, MONTH_MILESTONES, WEEKLY_TARGET, AUTOMATIONS } from './data';
 import Header from './components/Header';
@@ -129,22 +129,6 @@ const App: React.FC = () => {
     setWeekTasks(prev => prev.filter(t => t.id !== weekTask.id));
   };
 
-  // Set up event listener for drag and drop
-  useEffect(() => {
-    const handleMoveEvent = (e: Event) => {
-      const customEvent = e as CustomEvent<WeekTask>;
-      if (customEvent.detail) {
-        handleMoveWeekTaskToToday(customEvent.detail);
-      }
-    };
-
-    window.addEventListener('moveWeekTaskToToday', handleMoveEvent);
-
-    return () => {
-      window.removeEventListener('moveWeekTaskToToday', handleMoveEvent);
-    };
-  }, []);
-
   return (
     <div className="min-h-screen text-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -156,7 +140,8 @@ const App: React.FC = () => {
               clientsMap={clientsMap} 
               phasesMap={phasesMap} 
               onToggle={toggleTaskCompletion} 
-              onDelete={(taskId) => setTodayTasks(prev => prev.filter(t => t.id !== taskId))} 
+              onDelete={(taskId) => setTodayTasks(prev => prev.filter(t => t.id !== taskId))}
+              onDropWeekTask={handleMoveWeekTaskToToday}
             />
             <WeeklyFocus 
               tasks={weekTasks} 

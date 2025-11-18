@@ -10,9 +10,10 @@ interface TodayTasksProps {
   phasesMap: Map<string, Phase>;
   onToggle: (taskId: string) => void;
   onDelete: (taskId: string) => void;
+  onDropWeekTask?: (weekTask: WeekTask) => void;
 }
 
-const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, onToggle, onDelete }) => {
+const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, onToggle, onDelete, onDropWeekTask }) => {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -32,12 +33,9 @@ const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, o
 
     try {
       const taskData = e.dataTransfer.getData('application/json');
-      if (taskData) {
+      if (taskData && onDropWeekTask) {
         const weekTask: WeekTask = JSON.parse(taskData);
-        
-        // Get the onMoveToToday function from the parent via window event
-        const event = new CustomEvent('moveWeekTaskToToday', { detail: weekTask });
-        window.dispatchEvent(event);
+        onDropWeekTask(weekTask);
       }
     } catch (error) {
       console.error('Error processing dropped task:', error);
@@ -52,7 +50,7 @@ const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, o
       </div>
       <Card>
         <div 
-          className={`transition-all duration-200 ${isDragOver ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-900/10' : ''}`}
+          className={`transition-all duration-200 ${isDragOver ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-900/10 rounded-lg' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
