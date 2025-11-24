@@ -60,7 +60,12 @@ export async function getServerSideProps({ req }) {
 
 const HomePage = ({ initialData, geminiApiKey }) => {
   const router = useRouter();
-  const [data, setData] = useState(initialData);
+  // Filter out completed tasks from initial data for the active view
+  const filteredInitialData = {
+    ...initialData,
+    todayTasks: initialData.todayTasks.filter(task => task.completed === false)
+  };
+  const [data, setData] = useState(filteredInitialData);
 
   const clientsMap = useMemo(() => new Map(data.clients.map(c => [c.id, c])), [data.clients]);
   const phasesMap = useMemo(() => new Map(data.phases.map(p => [p.id, p])), [data.phases]);
@@ -70,7 +75,7 @@ const HomePage = ({ initialData, geminiApiKey }) => {
     const originalTasks = data.todayTasks;
     const newTasks = originalTasks.map(task =>
         task.id === taskId ? { ...task, completed: !task.completed } : task
-    );
+    ).filter(task => task.completed === false); // Filter out completed tasks
     setData(prevData => ({ ...prevData, todayTasks: newTasks }));
 
     try {
@@ -131,7 +136,7 @@ const HomePage = ({ initialData, geminiApiKey }) => {
             return taskToUpdate;
         }
         return task;
-    });
+    }).filter(task => task.completed === false); // Filter out completed tasks
 
     if (taskToUpdate) {
         setData(prev => ({...prev, todayTasks: newTasks})); // Optimistic update
