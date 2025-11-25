@@ -349,7 +349,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ todayTasks, weekTasks, 
                     inputAudioTranscription: {},
                     speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' }}},
                     tools: [{ functionDeclarations: [readTasksFunctionDeclaration, addTaskFunctionDeclaration, addWeekTaskFunctionDeclaration, addMonthMilestoneFunctionDeclaration, updateTaskStatusFunctionDeclaration, deleteTaskFunctionDeclaration, deleteWeekTaskFunctionDeclaration, deleteMonthMilestoneFunctionDeclaration, readWeekTasksFunctionDeclaration, readMonthMilestonesFunctionDeclaration] }],
-                     systemInstruction: "You are a helpful assistant for managing an SEO agency's tasks. Be concise and friendly."
+                     systemInstruction: "You are a helpful assistant for managing an SEO agency's tasks. Be concise and friendly. When you add tasks, they are automatically categorized into the appropriate phase (Learning & Discovery, Improving & Optimization, Building & Content, Promoting & Authority, or Evaluation & Transition) by an AI system, so you don't need to mention labeling or categorization - it happens automatically behind the scenes."
                 }
             });
 

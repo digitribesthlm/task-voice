@@ -149,6 +149,29 @@ const HomePage = ({ initialData, geminiApiKey }) => {
     }
   };
   
+  const suggestPhaseForTask = async (taskTitle) => {
+    console.log(`🔍 Suggesting phase for task: "${taskTitle}"`);
+    try {
+      const response = await fetch('/api/suggest-phase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskTitle }),
+      });
+
+      if (!response.ok) {
+        console.error(`❌ API error: ${response.status}`);
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ AI suggested phase: ${result.phaseId} for "${taskTitle}"`);
+      return result.phaseId || 'p3';
+    } catch (error) {
+      console.error('❌ Error suggesting phase:', error);
+      return 'p3'; // Default fallback
+    }
+  };
+
   const addTask = async (title, clientName) => {
     const client = data.clients.find(c => c.name.toLowerCase() === clientName.toLowerCase());
     if (!client) {
@@ -156,19 +179,22 @@ const HomePage = ({ initialData, geminiApiKey }) => {
         return `I couldn't find a client named ${clientName}. Please try again.`;
     }
 
+    // Get AI-suggested phase
+    const suggestedPhase = await suggestPhaseForTask(title);
+
     const newTask = {
         id: `t${Date.now()}`,
         title,
         clientId: client.id,
-        phaseId: 'p3', // Default to 'Building & Content'
+        phaseId: suggestedPhase,
         completed: false,
     };
-    
+
     const originalTasks = data.todayTasks;
     // Add a temporary _id for the key prop to avoid warnings before a real one comes from the DB
     const displayTask = {...newTask, _id: `temp_${Date.now()}`};
     setData(prev => ({...prev, todayTasks: [...prev.todayTasks, displayTask]}));
-    
+
     try {
        await fetch('/api/data', {
           method: 'POST',
@@ -285,30 +311,33 @@ const HomePage = ({ initialData, geminiApiKey }) => {
         return `I couldn't find a client named ${clientName}.`;
     }
 
+    // Get AI-suggested phase
+    const suggestedPhase = await suggestPhaseForTask(title);
+
     const newTask = {
         id: `w${Date.now()}`,
         title,
         clientId: client.id,
-        phaseId: 'p3',
+        phaseId: suggestedPhase,
         day: day || 'Monday',
         type: 'week'
     };
-    
+
     const originalTasks = data.weekTasks;
     const displayTask = {...newTask, _id: `temp_${Date.now()}`};
     setData(prev => ({...prev, weekTasks: [...prev.weekTasks, displayTask]}));
-    
+
     try {
        const response = await fetch('/api/data', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newTask),
        });
-       
+
        if (!response.ok) {
          throw new Error(`HTTP error! status: ${response.status}`);
        }
-       
+
        const result = await response.json();
        console.log('Week task added:', result);
        return `I've added "${title}" to this week's tasks for ${clientName}.`;
