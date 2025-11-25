@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import type { Task, Client, Phase, WeekTask } from '../types';
 import Card from './Card';
-import { TrophyIcon, TrashIcon } from './Icons';
+import { TrophyIcon, TrashIcon, ClockIcon } from './Icons';
 
 interface TodayTasksProps {
   tasks: Task[];
@@ -10,11 +10,15 @@ interface TodayTasksProps {
   phasesMap: Map<string, Phase>;
   onToggle: (taskId: string) => void;
   onDelete: (taskId: string) => void;
+  onWaitingToggle?: (taskId: string, waitingFor: string) => void;
   onDropWeekTask?: (weekTask: WeekTask) => void;
+  waitingInputTaskId?: string | null;
+  onWaitingInputChange?: (taskId: string | null) => void;
 }
 
-const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, onToggle, onDelete, onDropWeekTask }) => {
+const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, onToggle, onDelete, onWaitingToggle, onDropWeekTask, waitingInputTaskId, onWaitingInputChange }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [waitingForInput, setWaitingForInput] = useState('');
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -58,6 +62,37 @@ const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, o
     // Reset visual feedback
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.style.opacity = '1';
+    }
+  };
+
+  const handleShowWaitingInput = (taskId: string) => {
+    if (onWaitingInputChange) {
+      onWaitingInputChange(taskId);
+      setWaitingForInput('');
+    }
+  };
+
+  const handleSubmitWaitingInput = (taskId: string) => {
+    if (onWaitingToggle && waitingForInput.trim()) {
+      onWaitingToggle(taskId, waitingForInput.trim());
+      setWaitingForInput('');
+    }
+  };
+
+  const handleCancelWaitingInput = () => {
+    if (onWaitingInputChange) {
+      onWaitingInputChange(null);
+      setWaitingForInput('');
+    }
+  };
+
+  const handleWaitingInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, taskId: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmitWaitingInput(taskId);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancelWaitingInput();
     }
   };
 
@@ -112,14 +147,63 @@ const TodayTasks: React.FC<TodayTasksProps> = ({ tasks, clientsMap, phasesMap, o
                          <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: phase.color, color: '#FFFFFF' }}>{phase.name}</span>
                       )}
                     </div>
+                    {waitingInputTaskId === task.id && (
+                      <div className="mt-3 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={waitingForInput}
+                          onChange={(e) => setWaitingForInput(e.target.value)}
+                          onKeyDown={(e) => handleWaitingInputKeyDown(e, task.id)}
+                          placeholder="Who are you waiting for?"
+                          className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSubmitWaitingInput(task.id);
+                          }}
+                          className="p-2 text-green-400 hover:text-green-300 hover:bg-slate-700/50 rounded-lg transition-colors duration-200"
+                          title="Submit"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCancelWaitingInput();
+                          }}
+                          className="p-2 text-red-400 hover:text-red-300 hover:bg-slate-700/50 rounded-lg transition-colors duration-200"
+                          title="Cancel"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <button
-                    onClick={() => onDelete(task.id)}
-                    className="text-slate-400 hover:text-red-400 transition-colors duration-200 p-2 rounded-lg hover:bg-slate-700/50"
-                    title="Delete task"
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {onWaitingToggle && (
+                      <button
+                        onClick={() => handleShowWaitingInput(task.id)}
+                        className="text-slate-400 hover:text-yellow-400 transition-colors duration-200 p-2 rounded-lg hover:bg-slate-700/50"
+                        title="Move to waiting"
+                      >
+                        <ClockIcon className="w-5 h-5" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onDelete(task.id)}
+                      className="text-slate-400 hover:text-red-400 transition-colors duration-200 p-2 rounded-lg hover:bg-slate-700/50"
+                      title="Delete task"
+                    >
+                      <TrashIcon className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               );
             })}

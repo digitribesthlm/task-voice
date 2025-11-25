@@ -17,6 +17,9 @@ export interface Task {
   clientId: string;
   phaseId: string;
   completed: boolean;
+  waiting?: boolean;
+  waitingFor?: string;
+  waitingSince?: string;
 }
 
 export interface WeekTask {

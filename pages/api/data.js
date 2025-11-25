@@ -34,14 +34,60 @@ export default async function handler(req, res) {
      }
   } else if (req.method === 'PUT') {
       try {
-        const { taskId, completed } = req.body;
+        const { taskId, completed, waiting, waitingFor, waitingSince } = req.body;
         if (!taskId) {
           return res.status(400).json({ message: 'Task ID is required' });
         }
-        
+
+        // Build update object dynamically based on what's provided
+        const updateFields = {};
+        if (completed !== undefined) {
+          updateFields.completed = completed;
+        }
+        if (waiting !== undefined) {
+          updateFields.waiting = waiting;
+        }
+        if (waitingFor !== undefined) {
+          if (waitingFor === null) {
+            // Remove the field if null is passed
+            updateFields.waitingFor = null;
+          } else {
+            updateFields.waitingFor = waitingFor;
+          }
+        }
+        if (waitingSince !== undefined) {
+          if (waitingSince === null) {
+            // Remove the field if null is passed
+            updateFields.waitingSince = null;
+          } else {
+            updateFields.waitingSince = waitingSince;
+          }
+        }
+
+        // Separate fields to unset (remove) from fields to set
+        const unsetFields = {};
+        const setFields = {};
+
+        Object.keys(updateFields).forEach(key => {
+          if (updateFields[key] === null) {
+            unsetFields[key] = '';
+          } else {
+            setFields[key] = updateFields[key];
+          }
+        });
+
+        // Build the update operation
+        const updateOperation = {};
+        if (Object.keys(setFields).length > 0) {
+          updateOperation.$set = setFields;
+        }
+        if (Object.keys(unsetFields).length > 0) {
+          updateOperation.$unset = unsetFields;
+        }
+
         const result = await db.collection('app_todayTasks').updateOne(
-            { id: taskId }, 
-            { $set: { completed: completed } }
+            { id: taskId },
+            updateOperation
         );
 
         if (result.matchedCount === 0) {

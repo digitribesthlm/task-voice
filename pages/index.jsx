@@ -5,6 +5,7 @@ import TodayTasks from '../components/TodayTasks';
 import WeeklyFocus from '../components/WeeklyFocus';
 import AgencyTarget from '../components/AgencyTarget';
 import MonthGlance from '../components/MonthGlance';
+import WaitingTasks from '../components/WaitingTasks';
 import SystemStatus from '../components/SystemStatus';
 import VoiceAssistant from '../components/VoiceAssistant';
 import { connectToDatabase } from '../lib/mongodb';
@@ -60,22 +61,32 @@ export async function getServerSideProps({ req }) {
 
 const HomePage = ({ initialData, geminiApiKey }) => {
   const router = useRouter();
-  // Filter out completed tasks from initial data for the active view
-  const filteredInitialData = {
-    ...initialData,
-    todayTasks: initialData.todayTasks.filter(task => task.completed === false)
-  };
-  const [data, setData] = useState(filteredInitialData);
+
+  // Store all tasks in state (not filtered)
+  const [data, setData] = useState(initialData);
+
+  // Track which task is showing the waiting input
+  const [waitingInputTaskId, setWaitingInputTaskId] = useState(null);
 
   const clientsMap = useMemo(() => new Map(data.clients.map(c => [c.id, c])), [data.clients]);
   const phasesMap = useMemo(() => new Map(data.phases.map(p => [p.id, p])), [data.phases]);
   const activeAutomations = useMemo(() => data.automations.filter(a => a.status === 'active').length, [data.automations]);
 
+  // Filter active tasks (not completed and not waiting)
+  const activeTasks = useMemo(() => {
+    return data.todayTasks.filter(task => task.completed === false && !task.waiting);
+  }, [data.todayTasks]);
+
+  // Filter waiting tasks
+  const waitingTasks = useMemo(() => {
+    return data.todayTasks.filter(task => task.waiting === true && task.completed === false);
+  }, [data.todayTasks]);
+
   const toggleTaskCompletion = async (taskId, currentStatus) => {
     const originalTasks = data.todayTasks;
     const newTasks = originalTasks.map(task =>
         task.id === taskId ? { ...task, completed: !task.completed } : task
-    ).filter(task => task.completed === false); // Filter out completed tasks
+    );
     setData(prevData => ({ ...prevData, todayTasks: newTasks }));
 
     try {
@@ -86,6 +97,54 @@ const HomePage = ({ initialData, geminiApiKey }) => {
       });
     } catch(e) {
       console.error("Failed to update task", e);
+      setData(prevData => ({ ...prevData, todayTasks: originalTasks }));
+    }
+  };
+
+  const toggleTaskWaiting = async (taskId, waitingFor) => {
+    const originalTasks = data.todayTasks;
+
+    // Set waitingSince to current date/time
+    const waitingSince = new Date().toISOString();
+
+    // Update task to waiting status
+    const newTasks = originalTasks.map(task =>
+      task.id === taskId ? { ...task, waiting: true, waitingFor: waitingFor || '', waitingSince } : task
+    );
+    setData(prevData => ({ ...prevData, todayTasks: newTasks }));
+
+    // Clear the waiting input state
+    setWaitingInputTaskId(null);
+
+    try {
+      await fetch(`/api/data`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId, waiting: true, waitingFor: waitingFor || '', waitingSince }),
+      });
+    } catch(e) {
+      console.error("Failed to update task waiting status", e);
+      setData(prevData => ({ ...prevData, todayTasks: originalTasks }));
+    }
+  };
+
+  const resumeTaskFromWaiting = async (taskId) => {
+    const originalTasks = data.todayTasks;
+
+    // Update task to remove waiting status and clear waitingFor and waitingSince
+    const newTasks = originalTasks.map(task =>
+      task.id === taskId ? { ...task, waiting: false, waitingFor: undefined, waitingSince: undefined } : task
+    );
+    setData(prevData => ({ ...prevData, todayTasks: newTasks }));
+
+    try {
+      await fetch(`/api/data`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId, waiting: false, waitingFor: null, waitingSince: null }),
+      });
+    } catch(e) {
+      console.error("Failed to resume task", e);
       setData(prevData => ({ ...prevData, todayTasks: originalTasks }));
     }
   };
@@ -558,13 +617,24 @@ const HomePage = ({ initialData, geminiApiKey }) => {
         <Header onLogout={handleLogout} />
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-2 space-y-6">
-            <TodayTasks tasks={data.todayTasks} clientsMap={clientsMap} phasesMap={phasesMap} onToggle={toggleTaskCompletion} onDelete={deleteTask} onDropWeekTask={handleMoveWeekTaskToToday} />
+            <TodayTasks
+              tasks={activeTasks}
+              clientsMap={clientsMap}
+              phasesMap={phasesMap}
+              onToggle={toggleTaskCompletion}
+              onDelete={deleteTask}
+              onWaitingToggle={toggleTaskWaiting}
+              onDropWeekTask={handleMoveWeekTaskToToday}
+              waitingInputTaskId={waitingInputTaskId}
+              onWaitingInputChange={setWaitingInputTaskId}
+            />
             <WeeklyFocus tasks={data.weekTasks} clientsMap={clientsMap} onDelete={deleteWeekTask} onMoveToToday={handleMoveWeekTaskToToday} onDropTodayTask={handleMoveTodayTaskToWeek} />
           </div>
           <div className="space-y-6">
             {data.weeklyTarget && <AgencyTarget target={data.weeklyTarget} />}
             <MonthGlance milestones={data.monthMilestones} clientsMap={clientsMap} onDelete={deleteMonthMilestone} />
             <SystemStatus seoPhasesCount={data.phases.length} activeAutomationsCount={activeAutomations} totalAutomations={data.automations.length} />
+            <WaitingTasks tasks={waitingTasks} clientsMap={clientsMap} phasesMap={phasesMap} onResume={resumeTaskFromWaiting} />
           </div>
         </main>
       </div>
