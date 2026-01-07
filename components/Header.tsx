@@ -5,10 +5,21 @@ import { useRouter } from 'next/router';
 interface HeaderProps {
   onLogout?: () => void;
   showCompletedLink?: boolean;
+  onNavigateTools?: () => void;
+  showToolsLink?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ onLogout, showCompletedLink = true }) => {
+const Header: React.FC<HeaderProps> = ({
+  onLogout,
+  showCompletedLink = true,
+  onNavigateTools,
+  showToolsLink = true,
+}) => {
   const router = useRouter();
+
+  const shouldShowCompletedLink = showCompletedLink && router.pathname === '/';
+  const shouldShowToolsLink =
+    showToolsLink && typeof onNavigateTools === 'function' && router.pathname !== '/tools';
 
   return (
     <header className="text-center lg:text-left">
@@ -18,7 +29,15 @@ const Header: React.FC<HeaderProps> = ({ onLogout, showCompletedLink = true }) =
           <p className="text-slate-400 mt-1">Your Monday Morning OS — Simplified & Focused</p>
         </div>
         <div className="flex items-center gap-4">
-          {showCompletedLink && router.pathname === '/' && (
+          {shouldShowToolsLink && (
+            <button
+              onClick={onNavigateTools}
+              className="px-4 py-2 border border-slate-600 hover:bg-slate-800 rounded-lg transition-colors duration-200 text-white font-medium"
+            >
+              Tool Stack
+            </button>
+          )}
+          {shouldShowCompletedLink && (
             <button
               onClick={() => router.push('/completed')}
               className="px-4 py-2 bg-green-900/40 hover:bg-green-900/60 rounded-lg transition-colors duration-200 text-white font-medium"

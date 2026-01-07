@@ -116,7 +116,10 @@ const CompletedPage = ({ initialData }) => {
   return (
     <div className="min-h-screen bg-[#10172A] text-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <Header onLogout={handleLogout} />
+        <Header
+          onLogout={handleLogout}
+          onNavigateTools={() => router.push('/tools')}
+        />
 
         <div className="mt-6 mb-4">
           <button
